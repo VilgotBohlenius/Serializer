@@ -19,6 +19,12 @@ namespace Fish.Serialization
 
         Serializer(){ }
 
+        /// <summary>
+        /// Sets the procs for log events.
+        /// </summary>
+        /// <param name="logProc">The normal log event.</param>
+        /// <param name="logWarningProc">The warning log event.</param>
+        /// <param name="logErrorProc">The error log event.</param>
         public static void SetLogProcs(Action<string> logProc, Action<string> logWarningProc, Action<string> logErrorProc){
             log = logProc;
             logWarning = logWarningProc;
@@ -46,10 +52,23 @@ namespace Fish.Serialization
             return type;
         }
 
+        /// <summary>
+        /// Sets the string encoding type.
+        /// </summary>
+        /// <param name="encoding">The encoding to use.</param>
         public static void SetStringEncoding(Encoding encoding){
             Serializer.encoding = encoding;
         }
 
+        /// <summary>
+        /// Serializes a c# object into a byte array.
+        /// </summary>
+        /// <typeparam name="T">The type to serialize.</typeparam>
+        /// <param name="instance">The instance to serialize.</param>
+        /// <param name="buffer">The buffer containing the serialized object.</param>
+        /// <param name="prefix">The length of the prefix.</param>
+        /// <param name="suffix">The length of the suffix.</param>
+        /// <returns></returns>
         public static bool Serialize<T>(T instance, out byte[] buffer, int prefix = 0, int suffix = 0)
         {
             buffer = Array.Empty<byte>();
@@ -208,7 +227,7 @@ namespace Fish.Serialization
         }
 
         /// <summary>
-        /// Deserializes an the serializer buffer into a c# object.
+        /// Deserializes a byte array into a c# object.
         /// </summary>
         /// <typeparam name="T">The type to deserialize.</typeparam>
         /// <param name="instance">An instance to the object to deserialize.</param>

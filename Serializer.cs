@@ -2,9 +2,6 @@ using System;
 
 namespace Fish.Serialization
 {
-    /// <summary>
-    /// Utilities for serializing a c# object to a byte array
-    /// </summary>
     public class Serializer
     {
         enum SerializedType : byte
@@ -84,7 +81,7 @@ namespace Fish.Serialization
     
                 var fields = type.GetFields();
     
-                foreach(var field in fields)
+                foreach (var field in fields)
                 {
                     size += FIELD_TYPE_HEADER_SIZE + SerializedSizeOf(field.FieldType, field.GetValue(obj));
                 }
@@ -100,15 +97,17 @@ namespace Fish.Serialization
         /// <param name="obj">The instance of the object to serialize</param>
         /// <param name="outBuffer">The buffer containing the serialized object</param>
         /// <returns>True on success and false on failure</returns>
-        public static bool Serialize<T>(T obj, out byte[] outBuffer)
+        public static bool Serialize<T>(T obj, out byte[] outBuffer, int prefix = 0, int suffix = 0)
         {
-            outBuffer = new byte[SerializedSizeOf(typeof(T), obj)];
+            int outBufferSize = SerializedSizeOf(typeof(T), obj) + prefix + suffix;
+            outBuffer = new byte[outBufferSize];
     
             Buffer buffer = outBuffer;
+            buffer.SetPosition(prefix);
     
             var fields = typeof(T).GetFields();
     
-            foreach(var field in fields)
+            foreach (var field in fields)
             {
                 buffer.Write((byte)SerializedTypeOf(field.FieldType));
                 buffer.Write(field.GetValue(obj), field.FieldType);
@@ -124,16 +123,17 @@ namespace Fish.Serialization
         /// <param name="obj">The object to hold the deserialized data</param>
         /// <param name="inBuffer">The buffer to Deserialize</param>
         /// <returns>True on success and false on failure</returns>
-        public static bool Deserialize<T>(out T obj, byte[] inBuffer)
+        public static bool Deserialize<T>(out T obj, byte[] inBuffer, int prefix = 0)
             where T : new()
         {
             obj = new();
     
             Buffer buffer = inBuffer;
+            buffer.SetPosition(prefix);
     
             var fields = typeof(T).GetFields();
     
-            foreach(var field in fields)
+            foreach (var field in fields)
             {
                 buffer.Read(out byte serializedTypeId);
     

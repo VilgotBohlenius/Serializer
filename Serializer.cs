@@ -1,4 +1,4 @@
-using Fish.Buffer
+using System;
 
 namespace Fish.Serialization
 {

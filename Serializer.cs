@@ -2,8 +2,14 @@ using System;
 
 namespace Fish.Serialization
 {
-    public class Serializer
+    /// <summary>
+    /// Utilities for serializing a c# object to a byte array
+    /// </summary>
+    public static class Serializer
     {
+        /// <summary>
+        /// A serialized type represents a c# type as a byte id
+        /// </summary>
         enum SerializedType : byte
         {
             Unknown,
@@ -18,7 +24,7 @@ namespace Fish.Serialization
             Double,
             String
         }
-    
+
         /// <summary>
         /// Converts a c# type to a serialized type
         /// </summary>
@@ -41,7 +47,7 @@ namespace Fish.Serialization
                 _ => SerializedType.Unknown
             };
         }
-    
+
         /// <summary>
         /// Recursively calculates the size of an instance of an object
         /// </summary>
@@ -51,45 +57,45 @@ namespace Fish.Serialization
         static int SerializedSizeOf(Type type, object obj)
         {
             // Doesnt check for infinite recursion, should fix asap
-    
+
             const byte FIELD_TYPE_HEADER_SIZE = 1;
             const byte FIELD_SIZE_HEADER_SIZE = 4;
-    
-            return type switch
+
+            return FIELD_TYPE_HEADER_SIZE + type switch
             {
-                var t when t == typeof(byte) => 1,
-                var t when t == typeof(short) => 2,
-                var t when t == typeof(ushort) => 2,
-                var t when t == typeof(int) => 4,
-                var t when t == typeof(uint) => 4,
-                var t when t == typeof(long) => 8,
-                var t when t == typeof(ulong) => 8,
-                var t when t == typeof(float) => 4,
-                var t when t == typeof(double) => 8,
+                var t when t == typeof(byte) => sizeof(byte),
+                var t when t == typeof(short) => sizeof(short),
+                var t when t == typeof(ushort) => sizeof(ushort),
+                var t when t == typeof(int) => sizeof(int),
+                var t when t == typeof(uint) => sizeof(uint),
+                var t when t == typeof(long) => sizeof(long),
+                var t when t == typeof(ulong) => sizeof(ulong),
+                var t when t == typeof(float) => sizeof(float),
+                var t when t == typeof(double) => sizeof(double),
                 var t when t == typeof(string) => SizeOfString((string)obj),
                 _ => SizeOfObject(type, obj)
             };
-    
+
             int SizeOfString(string str)
             {
                 return FIELD_SIZE_HEADER_SIZE + Buffer.encoding.GetByteCount(str);
             }
-    
+
             int SizeOfObject(Type type, object obj)
             {
                 int size = 0;
-    
+
                 var fields = type.GetFields();
-    
+
                 foreach (var field in fields)
                 {
-                    size += FIELD_TYPE_HEADER_SIZE + SerializedSizeOf(field.FieldType, field.GetValue(obj));
+                    size += SerializedSizeOf(field.FieldType, field.GetValue(obj));
                 }
-    
+
                 return size;
             }
         }
-    
+
         /// <summary>
         /// Serializes a c# object to a byte array
         /// </summary>
@@ -101,21 +107,21 @@ namespace Fish.Serialization
         {
             int outBufferSize = SerializedSizeOf(typeof(T), obj) + prefix + suffix;
             outBuffer = new byte[outBufferSize];
-    
+
             Buffer buffer = outBuffer;
             buffer.SetPosition(prefix);
-    
+
             var fields = typeof(T).GetFields();
-    
+
             foreach (var field in fields)
             {
                 buffer.Write((byte)SerializedTypeOf(field.FieldType));
                 buffer.Write(field.GetValue(obj), field.FieldType);
             }
-    
+
             return true;
         }
-    
+
         /// <summary>
         /// Deserializes a byte array into a c# object
         /// </summary>
@@ -127,82 +133,88 @@ namespace Fish.Serialization
             where T : new()
         {
             obj = new();
-    
+
+            var reference = __makeref(obj);
+
             Buffer buffer = inBuffer;
             buffer.SetPosition(prefix);
-    
+
             var fields = typeof(T).GetFields();
-    
+
             foreach (var field in fields)
             {
                 buffer.Read(out byte serializedTypeId);
-    
+
                 switch ((SerializedType)serializedTypeId)
                 {
-                    case var t when t == SerializedType.Byte:
+                    case SerializedType.Unknown:
+                        {
+                            return false;
+                        }
+                    case SerializedType.Byte:
                         {
                             buffer.Read(out byte value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
-                    case var t when t == SerializedType.Short:
+                    case SerializedType.Short:
                         {
                             buffer.Read(out short value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
-                    case var t when t == SerializedType.UShort:
+                    case SerializedType.UShort:
                         {
                             buffer.Read(out ushort value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
-                    case var t when t == SerializedType.Int:
+                    case SerializedType.Int:
                         {
                             buffer.Read(out int value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
-                    case var t when t == SerializedType.UInt:
+                    case SerializedType.UInt:
                         {
                             buffer.Read(out uint value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
-                    case var t when t == SerializedType.Long:
+                    case SerializedType.Long:
                         {
                             buffer.Read(out long value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
-                    case var t when t == SerializedType.ULong:
+                    case SerializedType.ULong:
                         {
                             buffer.Read(out ulong value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
-    
-                    case var t when t == SerializedType.Float:
+
+                    case SerializedType.Float:
                         {
                             buffer.Read(out float value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
-                    case var t when t == SerializedType.Double:
+                    case SerializedType.Double:
                         {
                             buffer.Read(out double value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
-                    case var t when t == SerializedType.String:
+                    case SerializedType.String:
                         {
                             buffer.Read(out string value);
-                            field.SetValue(obj, value);
+                            field.SetValueDirect(reference, value);
                         }
                         break;
                 }
             }
-    
+
             return true;
         }
     }

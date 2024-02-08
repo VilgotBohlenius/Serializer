@@ -8,47 +8,6 @@ namespace Fish.Serialization
     public static class Serializer
     {
         /// <summary>
-        /// A serialized type represents a c# type as a byte id
-        /// </summary>
-        enum SerializedType : byte
-        {
-            Unknown,
-            Byte,
-            Short,
-            UShort,
-            Int,
-            UInt,
-            Long,
-            ULong,
-            Float,
-            Double,
-            String
-        }
-
-        /// <summary>
-        /// Converts a c# type to a serialized type
-        /// </summary>
-        /// <param name="type">The type to convert</param>
-        /// <returns>The serialized type</returns>
-        static SerializedType SerializedTypeOf(Type type)
-        {
-            return type switch
-            {
-                var t when t == typeof(byte) => SerializedType.Byte,
-                var t when t == typeof(short) => SerializedType.Short,
-                var t when t == typeof(ushort) => SerializedType.UShort,
-                var t when t == typeof(int) => SerializedType.Int,
-                var t when t == typeof(uint) => SerializedType.UInt,
-                var t when t == typeof(long) => SerializedType.Long,
-                var t when t == typeof(ulong) => SerializedType.ULong,
-                var t when t == typeof(float) => SerializedType.Float,
-                var t when t == typeof(double) => SerializedType.Double,
-                var t when t == typeof(string) => SerializedType.String,
-                _ => SerializedType.Unknown
-            };
-        }
-
-        /// <summary>
         /// Recursively calculates the size of an instance of an object
         /// </summary>
         /// <param name="type">The type of the object</param>
@@ -115,8 +74,8 @@ namespace Fish.Serialization
 
             foreach (var field in fields)
             {
-                buffer.Write((byte)SerializedTypeOf(field.FieldType));
-                buffer.Write(field.GetValue(obj), field.FieldType);
+                if (!buffer.Write(field.GetValue(obj), field.FieldType))
+                    return false;
             }
 
             return true;
@@ -143,76 +102,10 @@ namespace Fish.Serialization
 
             foreach (var field in fields)
             {
-                buffer.Read(out byte serializedTypeId);
+                if (!buffer.Read(out object value, field.FieldType))
+                    return false;
 
-                switch ((SerializedType)serializedTypeId)
-                {
-                    case SerializedType.Unknown:
-                        {
-                            return false;
-                        }
-                    case SerializedType.Byte:
-                        {
-                            buffer.Read(out byte value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-                    case SerializedType.Short:
-                        {
-                            buffer.Read(out short value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-                    case SerializedType.UShort:
-                        {
-                            buffer.Read(out ushort value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-                    case SerializedType.Int:
-                        {
-                            buffer.Read(out int value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-                    case SerializedType.UInt:
-                        {
-                            buffer.Read(out uint value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-                    case SerializedType.Long:
-                        {
-                            buffer.Read(out long value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-                    case SerializedType.ULong:
-                        {
-                            buffer.Read(out ulong value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-
-                    case SerializedType.Float:
-                        {
-                            buffer.Read(out float value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-                    case SerializedType.Double:
-                        {
-                            buffer.Read(out double value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-                    case SerializedType.String:
-                        {
-                            buffer.Read(out string value);
-                            field.SetValueDirect(reference, value);
-                        }
-                        break;
-                }
+                field.SetValueDirect(reference, value);
             }
 
             return true;

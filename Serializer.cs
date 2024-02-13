@@ -1,4 +1,3 @@
-using Microsoft.VisualBasic.FileIO;
 using System;
 
 namespace Fish.Serialization
@@ -107,6 +106,8 @@ namespace Fish.Serialization
         public static bool Deserialize<T>(out T instance, byte[] inBuffer, int prefix = 0)
             where T : new()
         {
+            instance = default;
+
             Buffer buffer = inBuffer;
             buffer.SetPosition(prefix);
 
